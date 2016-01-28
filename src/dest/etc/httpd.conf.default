@@ -214,6 +214,7 @@ ServerName localhost
 # <Directory> blocks below.
 #
 <Directory />
+    Options None
     AllowOverride none
     Require all denied
 </Directory>
@@ -507,8 +508,22 @@ Include etc/extra/proxy-html.conf
 #       but a statically compiled-in mod_ssl.
 #
 <IfModule ssl_module>
-SSLRandomSeed startup builtin
-SSLRandomSeed connect builtin
+    SSLProtocol All -SSLv3
+    SSLProxyProtocol All -SSLv3
+    SSLCompression off
+    SSLSessionCache shmcb:/tmp/DroboApps/apache2/ssl_sessions(512000)
+    SSLSessionCacheTimeout 300
+    SSLSessionTickets off
+    SSLUseStapling on
+    SSLStaplingCache shmcb:/tmp/DroboApps/apache2/ocsp(128000)
+    SSLStaplingResponderTimeout 5
+    SSLStaplingReturnResponderErrors off
+    SSLCipherSuite HIGH:MEDIUM:!MD5:!RC4
+    SSLProxyCipherSuite HIGH:MEDIUM:!MD5:!RC4
+    SSLHonorCipherOrder on
+
+    SSLRandomSeed startup builtin
+    SSLRandomSeed connect builtin
 </IfModule>
 #
 # uncomment out the below to deal with user agents that deliberately
@@ -521,5 +536,14 @@ SSLRandomSeed connect builtin
 #<IfModule headers_module>
 #RequestHeader unset DNT env=bad_DNT
 #</IfModule>
+
+# Default DroboApp configuration page settings
+<Directory "/mnt/DroboFS/Shares/DroboApps/*/www" >
+    Options Indexes FollowSymLinks MultiViews
+    AllowOverride None
+    Order allow,deny
+    Allow from all
+    Require all granted
+</Directory>
 
 IncludeOptional etc/includes/*.conf

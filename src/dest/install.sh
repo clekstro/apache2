@@ -26,6 +26,6 @@ find "${prog_dir}" -type f -name "*.default" -print | while read deffile; do
 done
 
 # generate SSL certificate
-if [ ! -f "${servercrt}" -o ! -f "${serverkey}" ]; then
+if [ ! -f "${servercrt}" ] || [ ! -f "${serverkey}" ]; then
   "${prog_dir}/libexec/openssl" req -new -x509 -keyout "${serverkey}" -out "${servercrt}" -days 3650 -nodes -subj "/C=US/ST=CA/L=Santa Clara/CN=$(hostname)"
 fi

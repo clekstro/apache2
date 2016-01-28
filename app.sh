@@ -16,7 +16,7 @@ popd
 
 ### OPENSSL ###
 _build_openssl() {
-local VERSION="1.0.2d"
+local VERSION="1.0.2f"
 local FOLDER="openssl-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
 local URL="http://mirror.switch.ch/ftp/mirror/openssl/source/${FILE}"
@@ -27,7 +27,7 @@ pushd "target/${FOLDER}"
 patch -p1 -i "${FOLDER}-parallel-build.patch"
 ./Configure --prefix="${DEPS}" --openssldir="${DEST}/etc/ssl" \
   zlib-dynamic --with-zlib-include="${DEPS}/include" --with-zlib-lib="${DEPS}/lib" \
-  shared threads linux-armv4 -DL_ENDIAN ${CFLAGS} ${LDFLAGS} \
+  shared threads linux-armv4 no-ssl2 no-ssl3 -DL_ENDIAN ${CFLAGS} ${LDFLAGS} \
   -Wa,--noexecstack -Wl,-z,noexecstack
 sed -i -e "s/-O3//g" Makefile
 make
@@ -46,10 +46,10 @@ popd
 
 ### SQLITE ###
 _build_sqlite() {
-local VERSION="3081101"
+local VERSION="3100200"
 local FOLDER="sqlite-autoconf-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
-local URL="http://sqlite.org/2015/${FILE}"
+local URL="http://sqlite.org/$(date +%Y)/${FILE}"
 
 _download_tgz "${FILE}" "${URL}" "${FOLDER}"
 pushd "target/${FOLDER}"
@@ -61,7 +61,7 @@ popd
 
 ### ICU ###
 _build_icu() {
-local VERSION="55.1"
+local VERSION="56.1"
 local FOLDER="icu"
 local FILE="icu4c-${VERSION/./_}-src.tgz"
 local URL="http://download.icu-project.org/files/icu4c/${VERSION}/${FILE}"
@@ -108,7 +108,7 @@ popd
 
 ### LIBXML2 ###
 _build_libxml2() {
-local VERSION="2.9.2"
+local VERSION="2.9.3"
 local FOLDER="libxml2-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
 local URL="ftp://xmlsoft.org/libxml2/${FILE}"
@@ -143,10 +143,10 @@ popd
 
 ### PCRE ###
 _build_pcre() {
-local VERSION="8.37"
+local VERSION="8.38"
 local FOLDER="pcre-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
-local URL="http://sourceforge.net/projects/pcre/files/pcre/${VERSION}/${FILE}"
+local URL="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/${FILE}"
 
 _download_tgz "${FILE}" "${URL}" "${FOLDER}"
 pushd "target/${FOLDER}"
@@ -194,7 +194,6 @@ popd
 
 ### LUA ###
 _build_lua() {
-# Apache 2.4.12 does not support Lua 5.3.x
 local VERSION="5.2.4"
 local FOLDER="lua-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
@@ -203,12 +202,12 @@ local URL="http://www.lua.org/ftp/${FILE}"
 _download_tgz "${FILE}" "${URL}" "${FOLDER}"
 cp -vf "src/${FOLDER}-liblua.so.patch" "target/${FOLDER}/"
 pushd "target/${FOLDER}"
-patch -p1 < "${FOLDER}-liblua.so.patch"
+patch -p1 -i "${FOLDER}-liblua.so.patch"
 make PLAT=linux RANLIB="${RANLIB}" CC="${CC}" AR="${AR} rcu" \
   MYCFLAGS="${CFLAGS:-}" MYLDFLAGS="${LDFLAGS:-}" MYLIBS="-lncurses"
 make install INSTALL_TOP="${DEPS}" INSTALL_LIB="${DEST}/lib"
 rm -vf "${DEST}/lib/liblua.a"
-ln -fs "liblua.so" "${DEST}/lib/liblua.so.1"
+cp -avf "src/liblua.so"* "${DEST}/lib/"
 popd
 }
 
@@ -257,7 +256,7 @@ popd
 
 ### HTTPD ###
 _build_httpd() {
-local VERSION="2.4.16"
+local VERSION="2.4.18"
 local FOLDER="httpd-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
 local URL="http://mirror.switch.ch/mirror/apache/dist/httpd/${FILE}"
@@ -301,7 +300,8 @@ EOF
   --with-libxml2="${DEPS}/include/libxml2" \
   --with-pcre="${DEPS}/bin/pcre-config" \
   --with-lua="${DEPS}" \
-  --disable-ext-filter ap_cv_void_ptr_lt_long=no
+  --disable-ext-filter ap_cv_void_ptr_lt_long=no \
+  MOD_LUA_LDADD="${LDFLAGS:-} -llua -lm"
 sed -i -e "/gen_test_char_OBJECTS = gen_test_char.lo/d" -e "s/gen_test_char: \$(gen_test_char_OBJECTS)/gen_test_char: gen_test_char.c/" -e "s/\$(LINK) \$(EXTRA_LDFLAGS) \$(gen_test_char_OBJECTS) \$(EXTRA_LIBS)/\$(CC_FOR_BUILD) \$(CFLAGS_FOR_BUILD) -DCROSS_COMPILE -o \$@ \$</" server/Makefile
 make CC_FOR_BUILD=/usr/bin/cc
 make install
@@ -330,7 +330,7 @@ popd
 
 ### LIBLZMA ###
 _build_liblzma() {
-local VERSION="5.2.1"
+local VERSION="5.2.2"
 local FOLDER="xz-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
 local URL="http://tukaani.org/xz/${FILE}"
@@ -364,7 +364,7 @@ popd
 
 ### LIBPNG ###
 _build_libpng() {
-local VERSION="1.6.18"
+local VERSION="1.6.21"
 local FOLDER="libpng-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
 local URL="http://sourceforge.net/projects/libpng/files/libpng16/${VERSION}/${FILE}"
@@ -380,7 +380,7 @@ popd
 
 ### LIBTIFF ###
 _build_libtiff() {
-local VERSION="4.0.4"
+local VERSION="4.0.6"
 local FOLDER="tiff-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
 local URL="ftp://ftp.remotesensing.org/pub/libtiff/${FILE}"
@@ -397,7 +397,7 @@ popd
 
 ### FREETYPE ###
 _build_freetype() {
-local VERSION="2.5.5"
+local VERSION="2.6.2"
 local FOLDER="freetype-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
 local URL="http://sourceforge.net/projects/freetype/files/freetype2/${VERSION}/${FILE}"
@@ -415,7 +415,7 @@ popd
 
 ### CURL ###
 _build_curl() {
-local VERSION="7.43.0"
+local VERSION="7.46.0"
 local FOLDER="curl-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
 local URL="http://curl.haxx.se/download/${FILE}"
@@ -452,9 +452,9 @@ popd
 
 ### GMP ###
 _build_gmp() {
-local VERSION="6.0.0"
+local VERSION="6.1.0"
 local FOLDER="gmp-${VERSION}"
-local FILE="${FOLDER}a.tar.xz"
+local FILE="${FOLDER}.tar.xz"
 local URL="ftp://ftp.gnu.org/gnu/gmp/${FILE}"
 
 _download_xz "${FILE}" "${URL}" "${FOLDER}"
@@ -487,7 +487,7 @@ popd
 
 ### BDB ###
 _build_bdb() {
-local VERSION="5.3.28"
+local VERSION="6.1.26"
 local FOLDER="db-${VERSION}"
 local FILE="${FOLDER}.tar.gz"
 local URL="http://download.oracle.com/berkeley-db/${FILE}"
@@ -578,15 +578,17 @@ popd
 ### PHP ###
 _build_php() {
 # sudo apt-get install php5-cli
-local VERSION="5.6.11"
+local VERSION="5.6.17"
 local FOLDER="php-${VERSION}"
 local FILE="${FOLDER}.tar.xz"
 local URL="http://ch1.php.net/get/${FILE}/from/this/mirror"
 
 _download_xz "${FILE}" "${URL}" "${FOLDER}"
-cp -vf "src/${FOLDER}-950-Fix-dl-cross-compiling-issue.patch" "target/${FOLDER}/"
+cp -vf "src/${FOLDER}-cross-compile.patch" "target/${FOLDER}/"
+cp -vf "src/${FOLDER}-bug-65426-db6.patch" "target/${FOLDER}/"
 pushd "target/${FOLDER}"
-patch -p1 -i "${FOLDER}-950-Fix-dl-cross-compiling-issue.patch"
+patch -p1 -i "${FOLDER}-cross-compile.patch"
+patch -p0 -i "${FOLDER}-bug-65426-db6.patch"
 ./buildconf --force
 
 sed -i -e "/unset ac_cv_func_dlopen/d" -e "/unset ac_cv_lib_dl_dlopen/d" configure
@@ -603,6 +605,8 @@ ln -fs "${DEST}/lib/libiconv.so" "${DEPS}/lib/"
   --enable-cli \
   --enable-cgi \
   --enable-fpm \
+  --enable-hash \
+  --enable-mysqlnd \
   --disable-static \
   --disable-embed \
   --with-apxs2="${DEST}/bin/apxs" \
@@ -618,15 +622,16 @@ ln -fs "${DEST}/lib/libiconv.so" "${DEPS}/lib/"
   --with-icu-dir="${DEPS}" \
   --with-jpeg-dir="${DEPS}" \
   --with-libexpat-dir="${DEPS}" \
+  --with-libxml-dir="${DEPS}" \
   --with-mcrypt=shared,"${DEPS}" \
-  --with-mysql=shared,"${DEPS}" \
-  --with-mysqli=shared,"${DEPS}/bin/mysql_config" \
+  --with-mysql=shared,mysqlnd \
+  --with-mysqli=shared,mysqlnd \
   --with-openssl="${DEPS}" \
   --with-openssl-dir="${DEPS}" \
   --with-pcre-dir="${DEPS}" \
   --with-pcre-regex="${DEPS}" \
   --with-png-dir="${DEPS}" \
-  --with-pdo-mysql=shared,"${DEPS}/bin/mysql_config" \
+  --with-pdo-mysql=shared,mysqlnd \
   --with-pdo-sqlite=shared,"${DEPS}" \
   --with-pear=shared \
   --with-readline="${DEPS}" \
@@ -636,9 +641,19 @@ ln -fs "${DEST}/lib/libiconv.so" "${DEPS}/lib/"
   --with-zlib=shared,"${DEPS}" \
   --with-zlib-dir="${DEPS}" \
   --without-{apxs,adabas,aolserver,birdstep,caudium,continuity,custom-odbc,db1,db2,db3,dbmaker,dbm,empress,empress-bcs,enchant,esoob,gdbm,ibm-db2,imap,interbase,iodbc,isapi,kerberos,ldap,libedit,litespeed,milter,mssql,ndbm,nsapi,oci8,ODBCRouter,pdo-dblib,pdo-firebird,pdo-oci,pdo-odbc,pdo-pgsql,pgsql,phttpd,pi3web,pspell,qdbm,recode,roxen,sapdb,snmp,solid,sybase-ct,t1lib,tcadb,thttpd,tidy,tux,unixODBC,vpx-dir,webjames,xpm-dir} \
-  CPPFLAGS="-I$DEPS/include/freetype2 -I$DEPS/include/freetype2" LIBS="-lssl -lpthread" \
-  ac_cv_func_dlopen=yes ac_cv_lib_dl_dlopen=yes ac_cv_php_xml2_config_path="${DEPS}/bin/xml2-config" ac_cv_func_gethostname=yes ac_cv_func_getaddrinfo=yes ac_cv_func_utime_null=yes ac_cv_func_memcmp_working=yes ac_cv_func_fnmatch_works=yes ac_cv_crypt_ext_des=yes ac_cv_crypt_md5=yes ac_cv_crypt_blowfish=yes ac_cv_crypt_SHA512=yes ac_cv_crypt_SHA256=yes \
-  php_cv_sizeof_int8=0 php_cv_sizeof_uint8=0 php_cv_sizeof_int16=0 php_cv_sizeof_uint16=0 php_cv_sizeof_int32=0 php_cv_sizeof_uint32=0 php_cv_sizeof_uchar=0 php_cv_sizeof_ulong=4 php_cv_sizeof_int8_t=1 php_cv_sizeof_uint8_t=1 php_cv_sizeof_int16_t=2 php_cv_sizeof_uint16_t=2 php_cv_sizeof_int32_t=4 php_cv_sizeof_uint32_t=4 php_cv_sizeof_int64_t=8 php_cv_sizeof_uint64_t=8 php_cv_sizeof_intmax_t=8 php_cv_sizeof_ptrdiff_t=4 php_cv_sizeof_ssize_t=4
+  CPPFLAGS="-I$DEPS/include/freetype2 -I$DEPS/include/freetype2" \
+  LIBS="-lssl -lpthread" \
+  ac_cv_func_dlopen=yes \
+  ac_cv_func_fnmatch_works=yes \
+  ac_cv_func_gethostname=yes \
+  ac_cv_func_getaddrinfo=yes \
+  ac_cv_func_memcmp_working=yes \
+  ac_cv_func_utime_null=yes \
+  ac_cv_lib_dl_dlopen=yes \
+  ac_cv_pread=yes \
+  ac_cv_pthreads_cflags="-pthread" \
+  ac_cv_pthreads_lib="-pthread" \
+  ac_cv_pwrite=yes
 
 make PHP_PHARCMD_EXECUTABLE=/usr/bin/php
 make -j1 PHP_PHARCMD_EXECUTABLE=/usr/bin/php PHP_EXECUTABLE=/usr/bin/php PHP_PEAR_SYSCONF_DIR="${DEST}/etc" install
