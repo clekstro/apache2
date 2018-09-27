@@ -32,7 +32,3 @@ install:
 script: ./build.sh
 
 after_failure: cat logfile_* | nc termbin.com 9999
-  
-branches:
-  only:
-    - master
